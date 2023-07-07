@@ -2,6 +2,14 @@ import axios from 'axios';
 import {baseUrl, getAuthHeader} from "./util";
 import {GridRowId} from "@mui/x-data-grid";;
 
+export interface IFetchRecordsParams {
+    search?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
+    take?: string;
+    skip?: string;
+}
+
 const doLogin = async (username: string, password: string) => {
     try {
         const response = await axios.post(`${baseUrl}/auth`, {username, password});
@@ -25,15 +33,19 @@ const doLogin = async (username: string, password: string) => {
 
 }
 
-const fetchRecords = async  (search: string, sort = 'date', order = 'asc') => {
+const fetchRecords = async  (searchParams: IFetchRecordsParams) => {
     const params = new URLSearchParams();
-    params.set('sort', sort);
-    params.set('order', order);
-    params.set('search', search);
+    for (const key in searchParams) {
+        const param = key as keyof IFetchRecordsParams;
+        if(searchParams[param]) {
+            params.set(key, searchParams[param]!.toString());
+        }
+
+    }
 
 
 
-    const response = await axios.get(`${baseUrl}/record/pagination`, { params, headers: {...getAuthHeader()}})
+    const response = await axios.get(`${baseUrl}/record/pagination`, { params: searchParams, headers: {...getAuthHeader()}})
 
     return response.data;
 

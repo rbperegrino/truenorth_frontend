@@ -6,8 +6,9 @@ import {
     GridActionsCellItem,
     GridRowParams
 } from '@mui/x-data-grid';
-import {Container, TextField} from "@mui/material";
+import {Box, Button, Container, IconButton, TextField} from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
 import {useEffect, useState} from "react";
 import {fetchRecords, deleteRecord} from "../../services/UserServices";
 import {fetchOperations, OperationLabel} from "../../services/OperationServices";
@@ -52,7 +53,8 @@ const UserRecords = () => {
     ];
 
     const [rows, setRows] = useState([]);
-    const [pagination, setPagination] = useState({});
+    const [rowCountState, setRowCountState] = useState(0);
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 5 })
     const [operations, setOperations] = useState([]);
     const [search, setSearch] = useState('')
 
@@ -71,47 +73,69 @@ const UserRecords = () => {
     };
 
     const opRecordsEffectFlow = async () => {
-        const ops = await getOperations()
-        const data = await fetchRecords(search);
-        setPagination(data.pagination);
-        setRows(data.data.map((record: any) => {
-            const op = ops.find((o: any) => o.id === record.operationId)
-            const operation = OperationLabel.get(op.type);
-            return {...record, operation};
-
-        }))
-    }
-
-
-    useEffect(() => {
 
         try {
-           opRecordsEffectFlow()
+            const ops = await getOperations()
+            const take = paginationModel.pageSize.toString();
+            const skip = (paginationModel.page).toString();
+            const data = await fetchRecords({search, take, skip});
+            setRowCountState(data.pagination.length);
+            setRows(data.data.map((record: any) => {
+                const op = ops.find((o: any) => o.id === record.operationId)
+                const operation = OperationLabel.get(op.type);
+                return {...record, operation};
+
+            }))
         } catch (e: any) {
             if(e.request.status === 401) {
                 navigate('/auth/login')
             }
         }
 
+    }
+
+
+    useEffect(() => {
+        opRecordsEffectFlow().then(r => undefined)
         return;
 
-    }, [])
+    }, [paginationModel])
+
+    const doSearch = async () => {
+        await opRecordsEffectFlow()
+    }
+
+
+    const paginationChanged = (data: any) => {
+
+        setPaginationModel(data)
+    }
 
     return (<Container style={{ height: "100%", padding: '10px' }}>
-        <TextField
-            label={'search'}
-            style={{marginBottom: '10px'}}
-            onChange={(e: any) => setSearch(e.target.value)}
-        />
+        <Box>
+            <TextField
+                label={'search'}
+                style={{marginBottom: '10px'}}
+                size="small"
+                onChange={(e: any) => setSearch(e.target.value)}
+            />
+            <Button onClick={() => doSearch()} startIcon={<SearchIcon />}  aria-label="search">
+                Search
+            </Button>
+
+        </Box>
         <DataGrid
             rows={rows}
             columns={columns}
+            rowCount={rowCountState}
+            onPaginationModelChange={paginationChanged}
             initialState={{
                 pagination: {
-                    paginationModel: { page: 0, pageSize: 5 },
+                    paginationModel
                 },
             }}
-            filterMode={'server'}
+            paginationMode="server"
+           // filterMode={'server'}
             pageSizeOptions={[5, 10]}
 
         />
