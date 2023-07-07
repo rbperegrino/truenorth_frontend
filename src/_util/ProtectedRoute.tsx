@@ -10,10 +10,10 @@ const ProtectedRoute = (props: {children: React.ReactNode}) => {
             return navigate('/auth/login');
         }
         setIsLoggedIn(true);
-    }, [isLoggedIn])
+    }, [navigate])
     useEffect(() => {
         checkUserToken();
-    }, [isLoggedIn]);
+    }, [isLoggedIn, checkUserToken]);
     return (
         <React.Fragment>
             {

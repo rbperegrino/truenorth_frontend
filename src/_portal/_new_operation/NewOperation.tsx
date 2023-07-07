@@ -20,7 +20,7 @@ const NewOperation = () => {
                 navigate('/auth/login')
             }
         })
-    }, [])
+    }, [navigate])
 
     useEffect(() => {
         const args = OperationArgs.get(type || '');

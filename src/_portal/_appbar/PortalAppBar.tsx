@@ -1,6 +1,6 @@
 import React from 'react';
 import AppBar from '@mui/material/AppBar';
-import {Box, Button, IconButton, Toolbar, Typography} from "@mui/material";
+import {Box, Button, Toolbar, Typography} from "@mui/material";
 import {useNavigate} from "react-router-dom";
 const PortalAppBar = () => {
     const navigate = useNavigate();

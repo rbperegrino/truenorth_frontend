@@ -6,10 +6,10 @@ import {
     GridActionsCellItem,
     GridRowParams
 } from '@mui/x-data-grid';
-import {Box, Button, Container, IconButton, TextField} from "@mui/material";
+import {Box, Button, Container, TextField} from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {fetchRecords, deleteRecord} from "../../services/UserServices";
 import {fetchOperations, OperationLabel} from "../../services/OperationServices";
 import {useNavigate} from "react-router-dom";
@@ -65,45 +65,48 @@ const UserRecords = () => {
     }
 
 
-    const getOperations = async () => {
-        if(operations.length > 0) return operations;
-        const ops = await fetchOperations();
-        setOperations(ops);
-        return ops;
-    };
 
-    const opRecordsEffectFlow = async () => {
 
-        try {
-            const ops = await getOperations()
+    const opRecordsEffectFlow = useCallback(async () => {
+
+        return new Promise(async (resolve) => {
+            let ops;
+            if(operations.length > 0) {
+                ops = operations;
+            } else {
+                ops = await fetchOperations();
+                setOperations(ops);
+            }
+
             const take = paginationModel.pageSize.toString();
             const skip = (paginationModel.page).toString();
-            const data = await fetchRecords({search, take, skip});
-            setRowCountState(data.pagination.length);
-            setRows(data.data.map((record: any) => {
-                const op = ops.find((o: any) => o.id === record.operationId)
+            const records = await fetchRecords({search, take, skip});
+            resolve({ops, records})
+        }).then((data: any) => {
+            setRowCountState(data.records.pagination.length);
+            setRows(data.records.data.map((record: any) => {
+                const op: any = data.ops.find((o: any) => o.id === record.operationId)
                 const operation = OperationLabel.get(op.type);
                 return {...record, operation};
-
             }))
-        } catch (e: any) {
+        }).catch((e) => {
             if(e.request.status === 401) {
                 navigate('/auth/login')
             }
-        }
+        })
 
-    }
+
+    }, [search, paginationModel, navigate, operations])
+
 
 
     useEffect(() => {
-        opRecordsEffectFlow().then(r => undefined)
+        opRecordsEffectFlow().then()
         return;
 
-    }, [paginationModel])
+    }, [paginationModel, opRecordsEffectFlow])
 
-    const doSearch = async () => {
-        await opRecordsEffectFlow()
-    }
+
 
 
     const paginationChanged = (data: any) => {
@@ -113,15 +116,21 @@ const UserRecords = () => {
 
     return (<Container style={{ height: "100%", padding: '10px' }}>
         <Box>
-            <TextField
-                label={'search'}
-                style={{marginBottom: '10px'}}
-                size="small"
-                onChange={(e: any) => setSearch(e.target.value)}
-            />
-            <Button onClick={() => doSearch()} startIcon={<SearchIcon />}  aria-label="search">
-                Search
-            </Button>
+            <form action="" onSubmit={(e: any) => {
+                e.preventDefault();
+                setSearch(e.target[0].value)
+            }}>
+                <TextField
+                    label={'search'}
+                    style={{marginBottom: '10px'}}
+                    size="small"
+
+                />
+                <Button type="submit" startIcon={<SearchIcon />}  aria-label="search">
+                    Search
+                </Button>
+            </form>
+
 
         </Box>
         <DataGrid
